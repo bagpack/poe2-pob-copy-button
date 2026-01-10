@@ -35,3 +35,7 @@ It also works while browsing the trade site in non-English languages.
   domains to ensure PoB-compatible text.
 - If data is not yet cached, the button shows "Failed".
   Re-click after the data fetch completes.
+
+## License
+
+MIT License (see `LICENSE`)
