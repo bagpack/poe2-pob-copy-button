@@ -15,15 +15,18 @@ PoE2 の Trade Fetch API (`/api/trade2/fetch`) レスポンスから取得した
 
 参照元フィールド：
 
-- `implicitMods?: string[]`
-- `runeMods?: string[]`
-- `enchantMods?: string[]`
-- `fracturedMods?: string[]`
-- `explicitMods?: string[]`
-- `desecratedMods?: string[]`
+- `implicitMods?: (string | ModObject)[]`
+- `runeMods?: (string | ModObject)[]`
+- `enchantMods?: (string | ModObject)[]`
+- `fracturedMods?: (string | ModObject)[]`
+- `explicitMods?: (string | ModObject)[]`
+- `desecratedMods?: (string | ModObject)[]`
 - `properties?: { name: string; values: [string, number][] }[]`（Quality取得用）
 - `properties?: { name: string; values: [string, number][] }[]`（Radius取得用）
 - （補助）`extended`（数値補完用・任意）
+
+`ModObject` は、少なくとも文字列の `description` を持つオブジェクトを指す。
+`hash`、`flags`、`mods` などのメタデータは、本文生成時に必要な範囲だけ使用する。
 
 ---
 
@@ -91,10 +94,35 @@ Implicits: 0
 
 ### 5.1 基本ルール
 
-- 配列要素（string）を **そのまま1行として出力**
+- 配列要素が文字列の場合は **そのまま1行として出力**
+- 配列要素がオブジェクトの場合は `description` を1行として出力
+- オブジェクトの `description` が文字列でない要素はスキップ
 - `null` / `undefined` / 空文字はスキップ
 
-### 5.2 言語
+### 5.2 オブジェクト形式modのフラグ
+
+現在の `trade2/fetch` は、`explicitMods` などの一部配列を次の形式で返すことがある。
+
+```json
+{
+  "description": "+3 to Level of all [Minion|Minion] Skills",
+  "hash": "stat.explicit.stat_2162097452",
+  "flags": { "fractured": true },
+  "mods": []
+}
+```
+
+出力時は `description` を使用し、`flags` はPoB用の先頭タグへ変換する。
+
+- `fractured` → `{fractured}`
+- `desecrated` → `{desecrated}`
+- `mutated` → `{mutated}`
+- `crafted` → `{custom}`
+- `enchant` / `implicit` / `rune` → 同名のタグ
+
+文字列形式の既存レスポンスでは、配列の種類に対応するタグを使用する。
+
+### 5.3 言語
 
 - **英語のみ対応**
 - 日本語・他言語は PoB の ModParser にマッチしないため不可

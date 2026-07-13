@@ -1,7 +1,32 @@
 export const createItemTextBuilder = (sourceSets) => {
+  const FLAG_TAGS = [
+    ["fractured", "fractured"],
+    ["desecrated", "desecrated"],
+    ["mutated", "mutated"],
+    ["crafted", "custom"],
+    ["enchant", "enchant"],
+    ["implicit", "implicit"],
+    ["rune", "rune"],
+  ];
+
   const normalizeLine = (line) => {
-    if (!line) return "";
+    if (typeof line !== "string" || !line) return "";
     return line.replace(/\s+/g, " ").trim();
+  };
+
+  const getFlagTag = (mod) => {
+    if (!mod || !mod.flags || typeof mod.flags !== "object") return null;
+    const flagTag = FLAG_TAGS.find(([flag]) => mod.flags[flag]);
+    return flagTag ? flagTag[1] : null;
+  };
+
+  const normalizeMod = (mod, sourceTag) => {
+    if (typeof mod === "string") {
+      return { line: mod, tag: sourceTag };
+    }
+    if (!mod || typeof mod !== "object") return null;
+    if (typeof mod.description !== "string") return null;
+    return { line: mod.description, tag: sourceTag || getFlagTag(mod) };
   };
 
   const countMods = (mods) => (Array.isArray(mods) ? mods.length : 0);
@@ -39,12 +64,14 @@ export const createItemTextBuilder = (sourceSets) => {
     for (const source of sourceSets) {
       const mods = item[source.key];
       if (!Array.isArray(mods)) continue;
-      for (let line of mods) {
-        line = normalizeLine(line);
+      for (const mod of mods) {
+        const normalizedMod = normalizeMod(mod, source.tag);
+        if (!normalizedMod) continue;
+        let line = normalizeLine(normalizedMod.line);
         if (!line) continue;
         if (line.includes("#")) continue;
-        if (source.tag) {
-          line = `{${source.tag}}${line}`;
+        if (normalizedMod.tag) {
+          line = `{${normalizedMod.tag}}${line}`;
         }
         lines.push(line);
       }
