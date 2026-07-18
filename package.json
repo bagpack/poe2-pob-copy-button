@@ -1,7 +1,7 @@
 {
   "name": "poe2-pob-copy-button",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.2",
   "type": "module",
   "scripts": {
     "build": "vite build --mode content && vite build --mode background && vite build --mode page-hook",

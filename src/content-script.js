@@ -7,7 +7,6 @@ import { createPobCopyButtonManager } from "./content/PobCopyButtonManager.js";
 
 (() => {
   const BUTTON_CLASS = "pob-copy-btn";
-  const PROCESSED_ATTR = "data-pob-copy-injected";
   const RESET_DELAY_MS = 1500;
   const MESSAGE_SOURCE = "pob-copy";
   const LABELS = {
@@ -44,7 +43,6 @@ import { createPobCopyButtonManager } from "./content/PobCopyButtonManager.js";
     labels: LABELS,
     resetDelayMs: RESET_DELAY_MS,
     buttonClass: BUTTON_CLASS,
-    processedAttr: PROCESSED_ATTR,
   });
 
   window.addEventListener("message", (event) => {

@@ -5,8 +5,12 @@ export const createPobCopyButtonManager = ({
   labels,
   resetDelayMs,
   buttonClass,
-  processedAttr,
+  logger = console,
 }) => {
+  const rowSelector = ".row[data-id]";
+  let started = false;
+  let scanScheduled = false;
+
   const setButtonStatus = (button, status) => {
     button.dataset.status = status;
     button.textContent = labels[status] || labels.ready;
@@ -65,32 +69,62 @@ export const createPobCopyButtonManager = ({
     } else {
       left.insertBefore(button, left.firstChild);
     }
-    row.setAttribute(processedAttr, "true");
   };
 
   const scanAndInject = (root = document) => {
-    const rows = root.querySelectorAll(
-      `div.row[data-id]:not([${processedAttr}])`
-    );
-    rows.forEach((row) => injectButton(row));
+    const rows = root.matches?.(rowSelector) ? [root] : [];
+    root.querySelectorAll?.(rowSelector).forEach((row) => rows.push(row));
+    rows.forEach((row) => {
+      try {
+        injectButton(row);
+      } catch (error) {
+        logger.error("[poe2-pob-copy] row injection failed", error);
+      }
+    });
+  };
+
+  const runScan = (root = document) => {
+    try {
+      scanAndInject(root);
+    } catch (error) {
+      logger.error("[poe2-pob-copy] scan failed", error);
+    }
+  };
+
+  const pendingRoots = new Set();
+
+  const scheduleScan = (root = document) => {
+    pendingRoots.add(root);
+    if (scanScheduled) return;
+    scanScheduled = true;
+    Promise.resolve().then(() => {
+      scanScheduled = false;
+      const roots = [...pendingRoots];
+      pendingRoots.clear();
+      roots.forEach((scanRoot) => runScan(scanRoot));
+    });
   };
 
   const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      mutation.addedNodes.forEach((node) => {
-        if (node.nodeType !== Node.ELEMENT_NODE) return;
-        if (node.matches?.("div.row[data-id]")) {
-          injectButton(node);
-        } else if (node.querySelectorAll) {
-          scanAndInject(node);
-        }
-      });
-    }
+    mutations.forEach((mutation) => {
+      if (mutation.type !== "childList" && mutation.type !== "attributes") {
+        return;
+      }
+      const row = mutation.target.closest?.(rowSelector);
+      scheduleScan(row || mutation.target);
+    });
   });
 
   const start = () => {
-    scanAndInject();
-    observer.observe(document.body, { childList: true, subtree: true });
+    if (started) return;
+    started = true;
+    observer.observe(document, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-id", "class"],
+    });
+    runScan();
   };
 
   return { start };
